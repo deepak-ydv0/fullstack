@@ -1,6 +1,7 @@
 import User from "../model/User.model.js";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import jwt from "jsonwebtoken";
 
 const registerUser = async (req, res) => {
   //get data
@@ -132,4 +133,67 @@ const verifyUser = async (req, res) => {
   }
 };
 
-export { registerUser, verifyUser };
+const login = async (req, res) => {
+  //get email password
+  // check email exist or not
+  // validate password
+  // generate sessionToken
+  //validate sessionToken
+
+  const { email, password } = req.body;
+
+  if (!email || password) {
+    return res.status(400).json({
+      message: "All fields are required",
+    });
+  }
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+      });
+    }
+
+    if (!user.isVerified) {
+      return res.status(400).json({
+        message: "User not verified. Please veryfy user",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log(isMatch);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+      });
+    }
+
+    const token = jwt.sign({ id: user._id }, "deepak", { expiresIn: "24h" });
+    const cookieOption = {
+      httpOnly: true,
+      secure: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    };
+    res.cookie("token", token, cookieOption);
+    res.status(200).json({
+      success: true,
+      message: "Login successfully",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+      },
+    });
+  } catch (error) {
+    res.status(404).json({
+      message: "User not login",
+      error,
+      success: false,
+    });
+  }
+};
+
+export { registerUser, verifyUser, login };
