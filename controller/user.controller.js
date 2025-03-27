@@ -80,7 +80,7 @@ const registerUser = async (req, res) => {
       success: true,
     });
   } catch (error) {
-    res.status(201).json({
+    res.status(404).json({
       message: "User not registered",
       error,
       success: false,
@@ -88,4 +88,48 @@ const registerUser = async (req, res) => {
   }
 };
 
-export { registerUser };
+const verifyUser = async (req, res) => {
+  //get user from params
+  //validate
+  //find user based on token
+  //if note
+  //set isverified feild true
+  //remove verification token
+  // save
+  // return response
+
+  const { token } = req.body;
+
+  if (!token) {
+    res.status(400).json({
+      message: "Invalid token",
+    });
+  }
+  try {
+    const user = await User.findOne({
+      verificationToken: token,
+    });
+    console.log(user);
+
+    if (!user) {
+      res.status(400).json({
+        message: "Invalid user token",
+      });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    await user.save();
+    res.status(201).json({
+      message: "User verify successfully",
+    });
+  } catch (error) {
+    res.status(404).json({
+      message: "User not verified",
+      error,
+      success: false,
+    });
+  }
+};
+
+export { registerUser, verifyUser };
