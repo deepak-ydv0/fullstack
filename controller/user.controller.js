@@ -172,9 +172,13 @@ const login = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "24h",
-    });
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "24h",
+      }
+    );
     const cookieOption = {
       httpOnly: true,
       secure: true,
@@ -200,4 +204,120 @@ const login = async (req, res) => {
   }
 };
 
-export { registerUser, verifyUser, login };
+const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    console.log("user", user);
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {}
+};
+
+const logoutUser = async (req, res) => {
+  try {
+    res.cookie("token", "");
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "Logged out faild",
+    });
+  }
+};
+
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  console.log("Received email:", email);
+
+  try {
+    // Find user by email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Generate token and expiry
+    const token = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = token;
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+
+    await user.save();
+
+    console.log("Forgot password request:", user);
+
+    return res.status(200).json({
+      message: "Forgot password request successful",
+      success: true,
+      token, // In production, do NOT send token in response.
+    });
+  } catch (error) {
+    console.error("Error in forgotPassword:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong. Please try again later.",
+    });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  // collect token from params,
+  // password from req.body
+  // fi
+  const { token } = req.params;
+  const { password } = req.body;
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+    if (!user) {
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+    }
+    //set password in user
+    user.password = password;
+    //empty resetToken, expiry
+    (user.resetPasswordToken = ""), (user.resetPasswordExpire = "");
+    //save
+    await user.save();
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully",
+    });
+  } catch (error) {
+    res.status(200).json({
+      success: false,
+      message: "Password reset failed",
+    });
+  }
+};
+
+export {
+  registerUser,
+  verifyUser,
+  login,
+  getMe,
+  logoutUser,
+  forgotPassword,
+  resetPassword,
+};
