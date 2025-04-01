@@ -8,6 +8,6 @@ import {
 const router = express.Router();
 
 router.post("/register", registerUser);
-router.post("/verify", verifyUser);
+router.get("/verify/:token", verifyUser);
 router.post("/login", login);
 export default router;

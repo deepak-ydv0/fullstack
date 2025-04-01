@@ -2,6 +2,7 @@ import User from "../model/User.model.js";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 const registerUser = async (req, res) => {
   //get data
@@ -99,7 +100,7 @@ const verifyUser = async (req, res) => {
   // save
   // return response
 
-  const { token } = req.body;
+  const { token } = req.params;
 
   if (!token) {
     res.status(400).json({
@@ -188,6 +189,7 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
+    console.log(error);
     res.status(404).json({
       message: "User not login",
       error,
