@@ -172,7 +172,9 @@ const login = async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user._id }, "deepak", { expiresIn: "24h" });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "24h",
+    });
     const cookieOption = {
       httpOnly: true,
       secure: true,
